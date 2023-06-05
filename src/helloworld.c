@@ -87,14 +87,16 @@ int sum;
 typedef struct filtertype
 {
 	float *Filtertemp;
+	//float *filterout;
 	float filterout[3];
 	short ordernum;
 	float *coef;
 	float *filtergain;
 }filtertype;
-
-float coef_lowpass[16] 	= {2,1,-1.79396184525177,0.886283112007014,2,1,-1.62340569764100,0.706949765682682,2,1,-1.51329076583890,0.591168074568205,2,1,-1.45970625437687,0.534825984961611};
-float gain_lowpass[4]  	= {1,2,3,4};
+							// 2nd order A							// 2nd order B							2nd order C								2nd order D
+float coef_lowpass[16] 	= {-1.79396184525177,0.886283112007014,2,1,-1.62340569764100,0.706949765682682,2,1,-1.51329076583890,0.591168074568205,2,1,-1.45970625437687,0.534825984961611,2,1};
+							// gain A									// gain B									// gain C									// gain D
+float gain_lowpass[4]  	= {0.023080316688810567637979431765415938571 ,0.020886017010420438594353598205088928808 ,0.019469327182325198155599110805269447155 ,0.018779932646185860944942902506227255799};
 //const float coef_notch[8]		= {-1.93187813428560,1,-1.92271809793349,0.992520964225918,-1.93187813428560,1,-1.92673324854103,0.992724132428440};
 //const float coef_highpass[16]	= {-1,-2,-1.99928185537009,0.999285212575927,-1,-2,-1.99796244598246,0.997965800972741,-1,-2,-1.99695378965628,0.996957142952821,-1,-2,-1.99640833339892,0.996411685779522};
 int main()
@@ -105,6 +107,9 @@ int main()
 	// first we make all the array's for the filters and set them to zero
 	eightOrderLPF.Filtertemp =(float*)calloc(12,sizeof(float));
 	arrayECG =(float*)calloc(3,sizeof(float));
+	arrayECG[1]= 3.36;
+	arrayECG[0] =3.36;
+	//eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
 	eightOrderLPF.coef = coef_lowpass;
 	eightOrderLPF.filtergain = gain_lowpass;
 	eightOrderLPF.ordernum =8;
@@ -126,15 +131,18 @@ int main()
     	// get data from the XADC depending on the sampling frequency
     	arrayECG[2] = XAdcGeTSampledValue(SAMPLE_FREQUENCY);
 
-    	// now we filter the data of the ECG
+    	// now we filter the data of the ECG using a 8th order lowpass with a cutoff frequency of 60Hz
     	eightOrderLPF.filterout[2] = Usefilter(arrayECG,eightOrderLPF.Filtertemp,eightOrderLPF.coef,eightOrderLPF.ordernum,eightOrderLPF.filtergain);
-    	shiftleftdata(eightOrderLPF.filterout,3);
-    	shiftleftdata(eightOrderLPF.Filtertemp,12);
+    	Shiftleftdata(eightOrderLPF.filterout,3);
+    	Shiftleftdata(eightOrderLPF.Filtertemp,12);
 
+    	// after that we implement the next filter, which is a 4th order Notch filter with a frequency range of 49-51 Hz
 	}
 
     print("Program finished \n\r");
     free(eightOrderLPF.Filtertemp);
+    free(arrayECG);
+    //free(eightOrderLPF.filterout);
     cleanup_platform();
     return XST_SUCCESS;
 }
