@@ -108,7 +108,7 @@ int main()
 	eightOrderLPF.Filtertemp =(float*)calloc(12,sizeof(float));
 	arrayECG =(float*)calloc(3,sizeof(float));
 	arrayECG[1]= 3.36;
-	arrayECG[0] =3.36;
+	arrayECG[2] =3.36;
 	//eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
 	eightOrderLPF.coef = coef_lowpass;
 	eightOrderLPF.filtergain = gain_lowpass;
@@ -130,12 +130,14 @@ int main()
 
     	// get data from the XADC depending on the sampling frequency
     	arrayECG[2] = XAdcGeTSampledValue(SAMPLE_FREQUENCY);
+    	// print the voltage
+    	//printf("%0d.%03d Volts.\n\r", (int)(Voltagedata), XAdcFractionToInt(Voltagedata));
 
     	// now we filter the data of the ECG using a 8th order lowpass with a cutoff frequency of 60Hz
     	eightOrderLPF.filterout[2] = Usefilter(arrayECG,eightOrderLPF.Filtertemp,eightOrderLPF.coef,eightOrderLPF.ordernum,eightOrderLPF.filtergain);
     	Shiftleftdata(eightOrderLPF.filterout,3);
     	Shiftleftdata(eightOrderLPF.Filtertemp,12);
-
+    	printf("%0d.%03d Volts.\n\r", (int)(eightOrderLPF.filterout[2]), XAdcFractionToInt(eightOrderLPF.filterout[2]));
     	// after that we implement the next filter, which is a 4th order Notch filter with a frequency range of 49-51 Hz
 	}
 
@@ -147,8 +149,7 @@ int main()
     return XST_SUCCESS;
 }
 
-// print the voltage
-    	//printf("%0d.%03d Volts.\n\r", (int)(Voltagedata), XAdcFractionToInt(Voltagedata));
+
 
 //SecondOrderFilter(arrayECG,cof_lowpassA,outputlowpassA);
 //Shiftleftdata(outputlowpassA,3);

@@ -5,25 +5,20 @@
 #include "xparameters.h"
 #include "xstatus.h"
 #include "sleep.h"
+#include "Filters.h"
 
 void SecondOrderFilter(float *x, float *p_fCoef,float *y, float*gain, short n,short coefnum)
 {
 	//only the first 2nd order filter is different (not in the temp array)
 	if (n==0)
 	{  	n=2;
-		// first scale the input value
-		//x[n] = gain[0]*x[n];
-		//float test = x[n];
 		// then apply the difference equation of the filter
-		(y[n])= -(p_fCoef[coefnum]) * (y[n-1]) - (p_fCoef[coefnum+1])* (y[n-2])+(x[n])+ (p_fCoef[coefnum+2])* (x[n-1]) + (p_fCoef[coefnum+3])* (x[n-2]);
+		(y[n])= -(p_fCoef[coefnum])*(y[n-1]) - (p_fCoef[coefnum+1])*(y[n-2]) + gain[0]*((x[n]) + (p_fCoef[coefnum+2])*(x[n-1]) + (p_fCoef[coefnum+3])*(x[n-2]));
 	}
 	else
 	{
-		// scale the input value
-		//x[n] = gain[((n-2)/3)+1] * x[n];
-		//float test = x[n];
 		// apply the difference equation of the filter (y[n+2], y[n+3], y[n+1] only because it is the same array. We do not try to use future values)
-		(y[n+3])= (-(p_fCoef[coefnum]) * (y[n+2]) - (p_fCoef[coefnum+1])* (y[n+1])+ (x[n])+ (p_fCoef[coefnum+2])* (x[n-1]) + (p_fCoef[coefnum+3])* (x[n-2]));
+		(y[n+3])= -(p_fCoef[coefnum])*(y[n+2]) - (p_fCoef[coefnum+1])*(y[n+1])+ gain[((n-2)/3)+1]*((x[n]) + (p_fCoef[coefnum+2])*(x[n-1]) + (p_fCoef[coefnum+3])*(x[n-2]));
 	}
 	//incorrect
 	//(y[n])= gain[(n-2)/3]*(-(p_fCoef[coefnum]) * (y[n-1]) - (p_fCoef[coefnum+1])* (y[n-2])+(x[n+3])+ (p_fCoef[coefnum+2])* (x[n+1]) + (p_fCoef[coefnum+3])* (x[n+2]));
