@@ -70,9 +70,11 @@ float XAdcGeTSampledValue(int samplefrequency)
 	}
 }
 
-// get the raw data from adc
-u16 rawdata()
+// get the raw data from the XAdc
+u16 XAdcGetRawData()
 {
+	XAdcPs_Reset(XAdcInstPtr);
+	VccPintRawData = XAdcPs_GetAdcData(XAdcInstPtr, XADCPS_CH_AUX_MIN + adc_channel);
 	return(VccPintRawData);
 }
 

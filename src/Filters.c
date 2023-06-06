@@ -20,8 +20,6 @@ void SecondOrderFilter(float *x, float *p_fCoef,float *y, float*gain, short n,sh
 		// apply the difference equation of the filter (y[n+2], y[n+3], y[n+1] only because it is the same array. We do not try to use future values)
 		(y[n+3])= -(p_fCoef[coefnum])*(y[n+2]) - (p_fCoef[coefnum+1])*(y[n+1])+ gain[((n-2)/3)+1]*((x[n]) + (p_fCoef[coefnum+2])*(x[n-1]) + (p_fCoef[coefnum+3])*(x[n-2]));
 	}
-	//incorrect
-	//(y[n])= gain[(n-2)/3]*(-(p_fCoef[coefnum]) * (y[n-1]) - (p_fCoef[coefnum+1])* (y[n-2])+(x[n+3])+ (p_fCoef[coefnum+2])* (x[n+1]) + (p_fCoef[coefnum+3])* (x[n+2]));
 }
 
 void Shiftleftdata(float *data_In, int size)

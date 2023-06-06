@@ -73,46 +73,78 @@
 XGpio dac;
 
 /************************** Variable Definitions ****************************/
-//u16 RawADCdata;
+float *arrayECG;
+
+// make structures for all filter types
+struct filtertype eightOrderLPF;
+struct filtertype fourthOrderNotch;
+struct filtertype eightOrderHPF;
+
+// set parameters for all filters
+
+	// 2nd order A							// 2nd order B							2nd order C								2nd order D
+float coef_lowpass[16] 	= {-1.79396184525177,0.886283112007014,2,1,-1.62340569764100,0.706949765682682,2,1,-1.51329076583890,0.591168074568205,2,1,-1.45970625437687,0.534825984961611,2,1};
+	// gain A									// gain B									// gain C									// gain D
+float gain_lowpass[4]  	= {0.023080316688810567637979431765415938571 ,0.020886017010420438594353598205088928808 ,0.019469327182325198155599110805269447155 ,0.018779932646185860944942902506227255799};
+
+	// 2nd order A												     // 2nd order B
+float coef_notch[8]		= {-1.92271809793349013,0.992520964225917846,-1.93187813428560307,1,-1.9267332485410309,0.992724132428439709,-1.93187813428560307,1};
+	// gain A			 // gain B
+float gain_notch[2]		= {0.996304442806574264,0.996304442806574264};
+
+	// 2nd order A									// 2nd order B									// 2nd order C									//2nd order D
+float coef_highpass[16] = {-1.99928185537008662,0.999285212575926618,-2,1,-1.99796244598246098,0.997965800972740902,-2,1,-1.99695378965628279,0.996957142952821118,-2,1,-1.99640833339891732,0.996411685779522438,-2,1};
+	// gain A			// gain B			 // gain C				// gain D
+float gain_highpass[4]	= {0.999641766986503311,0.998982061738800442,0.998477733152275948,0.99820500479460994};
 
 /****************************************************************************/
 /**************************        MAIN         *****************************/
 /****************************************************************************/
 
-//int arrayA[]={2,3,4,1,3};
-//int arrayB[]={4,5,1,2,2};
-//int result[5];
-int sum;
-
 typedef struct filtertype
 {
 	float *Filtertemp;
-	//float *filterout;
-	float filterout[3];
+	float *filterout;
 	short ordernum;
 	float *coef;
 	float *filtergain;
 }filtertype;
-							// 2nd order A							// 2nd order B							2nd order C								2nd order D
-float coef_lowpass[16] 	= {-1.79396184525177,0.886283112007014,2,1,-1.62340569764100,0.706949765682682,2,1,-1.51329076583890,0.591168074568205,2,1,-1.45970625437687,0.534825984961611,2,1};
-							// gain A									// gain B									// gain C									// gain D
-float gain_lowpass[4]  	= {0.023080316688810567637979431765415938571 ,0.020886017010420438594353598205088928808 ,0.019469327182325198155599110805269447155 ,0.018779932646185860944942902506227255799};
-//const float coef_notch[8]		= {-1.93187813428560,1,-1.92271809793349,0.992520964225918,-1.93187813428560,1,-1.92673324854103,0.992724132428440};
-//const float coef_highpass[16]	= {-1,-2,-1.99928185537009,0.999285212575927,-1,-2,-1.99796244598246,0.997965800972741,-1,-2,-1.99695378965628,0.996957142952821,-1,-2,-1.99640833339892,0.996411685779522};
-int main()
+
+void Intitialize_filter()
 {
-	float *arrayECG;
-	struct filtertype eightOrderLPF;
-	//struct filtertype SecondOrderNotch;
-	// first we make all the array's for the filters and set them to zero
-	eightOrderLPF.Filtertemp =(float*)calloc(12,sizeof(float));
-	arrayECG =(float*)calloc(3,sizeof(float));
-	arrayECG[1]= 3.36;
-	arrayECG[2] =3.36;
-	//eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
+	// first we make all the parameters for each filters and set the temporary values to zero
+
+	// low-pass filter
+	eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
+	eightOrderLPF.Filtertemp = (float*)calloc(12,sizeof(float));
 	eightOrderLPF.coef = coef_lowpass;
 	eightOrderLPF.filtergain = gain_lowpass;
-	eightOrderLPF.ordernum =8;
+	eightOrderLPF.ordernum = 8;
+
+	// notch filter
+	fourthOrderNotch.filterout =(float*)calloc(3,sizeof(float));
+	fourthOrderNotch.Filtertemp = (float*)calloc(12,sizeof(float));
+	fourthOrderNotch.coef = coef_notch;
+	fourthOrderNotch.filtergain = gain_notch;
+	fourthOrderNotch.ordernum = 4;
+
+	// high-pass filter
+	eightOrderHPF.filterout =(float*)calloc(3,sizeof(float));
+	eightOrderHPF.Filtertemp = (float*)calloc(12,sizeof(float));
+	eightOrderHPF.coef = coef_lowpass;
+	eightOrderHPF.filtergain = gain_lowpass;
+	eightOrderHPF.ordernum = 8;
+}
+
+int main()
+{
+
+	// First, we make a array to store the values from ADC
+	arrayECG =(float*)calloc(3,sizeof(float));
+
+	// the we initialize all the filters
+	Intitialize_filter();
+
 	init_platform();
 	print("Starting program...\n\r");
 
@@ -125,48 +157,56 @@ int main()
     }
 
     while(1){
-    	//shift the ECG data before putting new data into it
-    	Shiftleftdata(arrayECG, 3);
 
     	// get data from the XADC depending on the sampling frequency
     	arrayECG[2] = XAdcGeTSampledValue(SAMPLE_FREQUENCY);
     	// print the voltage
     	//printf("%0d.%03d Volts.\n\r", (int)(Voltagedata), XAdcFractionToInt(Voltagedata));
 
-    	// now we filter the data of the ECG using a 8th order lowpass with a cutoff frequency of 60Hz
+    	// first we filter the data of the ECG using a 8th order low-pass with a cutoff frequency of 60Hz
     	eightOrderLPF.filterout[2] = Usefilter(arrayECG,eightOrderLPF.Filtertemp,eightOrderLPF.coef,eightOrderLPF.ordernum,eightOrderLPF.filtergain);
-    	Shiftleftdata(eightOrderLPF.filterout,3);
-    	Shiftleftdata(eightOrderLPF.Filtertemp,12);
-    	printf("%0d.%03d Volts.\n\r", (int)(eightOrderLPF.filterout[2]), XAdcFractionToInt(eightOrderLPF.filterout[2]));
-    	// after that we implement the next filter, which is a 4th order Notch filter with a frequency range of 49-51 Hz
+    	// print the voltage as check-up
+    	//printf("%0d.%03d Volts.\n\r", (int)(eightOrderLPF.filterout[2]), XAdcFractionToInt(eightOrderLPF.filterout[2]));
+
+      	// after that we implement the next filter, which is a 4th order Notch filter with a frequency range of 49-51 Hz
+       	fourthOrderNotch.filterout[2] = Usefilter(eightOrderLPF.filterout,fourthOrderNotch.Filtertemp,fourthOrderNotch.coef,fourthOrderNotch.ordernum,fourthOrderNotch.filtergain);
+
+      	// Then we implement the last filter, which is a 8th order High-pass filter with a cutoff frequency of 0.35 Hz
+       	eightOrderHPF.filterout[2] = Usefilter(fourthOrderNotch.filterout,eightOrderHPF.Filtertemp,eightOrderHPF.coef,eightOrderHPF.ordernum,eightOrderHPF.filtergain);
+
+       	// now we can shift all the data from each filter to save the previous result
+       	// Shift data from low-pass filter
+       	Shiftleftdata(eightOrderLPF.Filtertemp,12);
+       	Shiftleftdata(eightOrderLPF.filterout,3);
+
+       	// Shift data from notch filter
+       	Shiftleftdata(fourthOrderNotch.Filtertemp,12);
+       	Shiftleftdata(fourthOrderNotch.filterout,3);
+
+       	// Shift data from high-pass filter
+      	Shiftleftdata(eightOrderHPF.Filtertemp,12);
+       	Shiftleftdata(eightOrderHPF.filterout,3);
+
+
+    	//shift the ECG data so we can put new data into it
+    	Shiftleftdata(arrayECG, 3);
 	}
 
     print("Program finished \n\r");
+
+    // Finally now that we do not need the values made from calloc anymore, we have to free them to prevent overflowing the system
     free(eightOrderLPF.Filtertemp);
+    free(eightOrderLPF.filterout);
+
+    free(fourthOrderNotch.Filtertemp);
+    free(fourthOrderNotch.filterout);
+
+    free(eightOrderHPF.Filtertemp);
+    free(eightOrderHPF.filterout);
+
     free(arrayECG);
-    //free(eightOrderLPF.filterout);
+
     cleanup_platform();
     return XST_SUCCESS;
 }
 
-
-
-//SecondOrderFilter(arrayECG,cof_lowpassA,outputlowpassA);
-//Shiftleftdata(outputlowpassA,3);
-// first we apply a 8th order lowpass filter with a steeper cutoff at ...Hz
-// Cascade the 8th order lowpass filter into four 2nd order lowpass filters
-//outputlowpassA[n]= -2*outputlowpassA[n-1] - outputlowpassA[n-2] + arrayECG[n] - 1.79396184525177*arrayECG[n-1] + 0.886283112007014*arrayECG[n-2];
-//outputlowpassB[n]= -2*outputlowpassB[n-1] - outputlowpassB[n-2] + arrayECG[n] - 1.62340569764100*arrayECG[n-1] + 0.706949765682682*arrayECG[n-2];
-//outputlowpassC[n]= -2*outputlowpassC[n-1] - outputlowpassC[n-2] + arrayECG[n] - 1.51329076583890*arrayECG[n-1] + 0.591168074568205*arrayECG[n-2];
-//outputlowpassD[n]= -2*outputlowpassD[n-1] - outputlowpassD[n-2] + arrayECG[n] - 1.45970625437687*arrayECG[n-1] + 0.534825984961611*arrayECG[n-2];
-
-//calculate the result
-//resultlowpass[2] = (outputlowpassA[2]) * (outputlowpassB[2]) * (outputlowpassC[2]) * (outputlowpassD[2]);
-
-// get the output data into their respective array
-//Shiftleftdata(outputlowpassA,3);
-//Shiftleftdata(outputlowpassB,3);
-//Shiftleftdata(outputlowpassC,3);
-//Shiftleftdata(outputlowpassD,3);
-
-//Shiftleftdata(resultlowpass,3);

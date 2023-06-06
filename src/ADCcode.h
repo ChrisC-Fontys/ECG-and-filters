@@ -4,6 +4,4 @@ int XAdcFractionToInt(float FloatNum);
 float XAdcGetValues();
 float XAdcGeTSampledValue(int samplefrequency);
 
-//void printf_bin(int number);
-
-u16 rawdata();
+u16 XAdcGetRawData();
