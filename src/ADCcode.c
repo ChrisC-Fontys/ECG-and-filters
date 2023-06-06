@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "stdio.h"
 #include "platform.h"
-#include "xil_printf.h"
 #include "xadcps.h"
 #include "xparameters.h"
 #include "xstatus.h"
@@ -13,7 +12,8 @@
 static XAdcPs XAdcInst;      /* XADC driver instance */
 
 /************************** Variable Definitions ****************************/
-const int adc_channel = 13;
+// select what adc channel you want to use (A0-A5)
+const int adc_channel = 13;		// define all pins (A0 to A5)
 
 XAdcPs *XAdcInstPtr = &XAdcInst;
 XAdcPs_Config *ConfigPtr;

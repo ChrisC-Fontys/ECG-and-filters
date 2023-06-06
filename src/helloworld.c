@@ -70,19 +70,17 @@
 
 /************************** Function Prototypes *****************************/
 
-XGpio dac;
+//XGpio dac;
 
 /************************** Variable Definitions ****************************/
 float *arrayECG;
 
 // make structures for all filter types
-struct filtertype eightOrderLPF;
-struct filtertype fourthOrderNotch;
-struct filtertype eightOrderHPF;
+struct filtertype LPF;
+struct filtertype Notch;
+struct filtertype HPF;
 
-// set parameters for all filters
-
-	// 2nd order A							// 2nd order B							2nd order C								2nd order D
+// 2nd order A							// 2nd order B							2nd order C								2nd order D
 float coef_lowpass[16] 	= {-1.79396184525177,0.886283112007014,2,1,-1.62340569764100,0.706949765682682,2,1,-1.51329076583890,0.591168074568205,2,1,-1.45970625437687,0.534825984961611,2,1};
 	// gain A									// gain B									// gain C									// gain D
 float gain_lowpass[4]  	= {0.023080316688810567637979431765415938571 ,0.020886017010420438594353598205088928808 ,0.019469327182325198155599110805269447155 ,0.018779932646185860944942902506227255799};
@@ -97,10 +95,6 @@ float coef_highpass[16] = {-1.99928185537008662,0.999285212575926618,-2,1,-1.997
 	// gain A			// gain B			 // gain C				// gain D
 float gain_highpass[4]	= {0.999641766986503311,0.998982061738800442,0.998477733152275948,0.99820500479460994};
 
-/****************************************************************************/
-/**************************        MAIN         *****************************/
-/****************************************************************************/
-
 typedef struct filtertype
 {
 	float *Filtertemp;
@@ -110,31 +104,10 @@ typedef struct filtertype
 	float *filtergain;
 }filtertype;
 
-void Intitialize_filter()
-{
-	// first we make all the parameters for each filters and set the temporary values to zero
 
-	// low-pass filter
-	eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
-	eightOrderLPF.Filtertemp = (float*)calloc(12,sizeof(float));
-	eightOrderLPF.coef = coef_lowpass;
-	eightOrderLPF.filtergain = gain_lowpass;
-	eightOrderLPF.ordernum = 8;
-
-	// notch filter
-	fourthOrderNotch.filterout =(float*)calloc(3,sizeof(float));
-	fourthOrderNotch.Filtertemp = (float*)calloc(12,sizeof(float));
-	fourthOrderNotch.coef = coef_notch;
-	fourthOrderNotch.filtergain = gain_notch;
-	fourthOrderNotch.ordernum = 4;
-
-	// high-pass filter
-	eightOrderHPF.filterout =(float*)calloc(3,sizeof(float));
-	eightOrderHPF.Filtertemp = (float*)calloc(12,sizeof(float));
-	eightOrderHPF.coef = coef_lowpass;
-	eightOrderHPF.filtergain = gain_lowpass;
-	eightOrderHPF.ordernum = 8;
-}
+/****************************************************************************/
+/**************************        MAIN         *****************************/
+/****************************************************************************/
 
 int main()
 {
@@ -143,7 +116,29 @@ int main()
 	arrayECG =(float*)calloc(3,sizeof(float));
 
 	// the we initialize all the filters
-	Intitialize_filter();
+	//Intitialize_filters(LPF,Notch,HPF);
+	// first we make all the parameters for each filters and set the temporary values to zero
+
+	// low-pass filter
+	LPF.filterout =(float*)calloc(3,sizeof(float));
+	LPF.Filtertemp = (float*)calloc(12,sizeof(float));
+	LPF.coef = coef_lowpass;
+	LPF.filtergain = gain_lowpass;
+	LPF.ordernum = 8;
+
+	// notch filter
+	Notch.filterout =(float*)calloc(3,sizeof(float));
+	Notch.Filtertemp = (float*)calloc(12,sizeof(float));
+	Notch.coef = coef_notch;
+	Notch.filtergain = gain_notch;
+	Notch.ordernum = 4;
+
+	// high-pass filter
+	HPF.filterout =(float*)calloc(3,sizeof(float));
+	HPF.Filtertemp = (float*)calloc(12,sizeof(float));
+	HPF.coef = coef_highpass;
+	HPF.filtergain = gain_highpass;
+	HPF.ordernum = 8;
 
 	init_platform();
 	print("Starting program...\n\r");
@@ -164,29 +159,28 @@ int main()
     	//printf("%0d.%03d Volts.\n\r", (int)(Voltagedata), XAdcFractionToInt(Voltagedata));
 
     	// first we filter the data of the ECG using a 8th order low-pass with a cutoff frequency of 60Hz
-    	eightOrderLPF.filterout[2] = Usefilter(arrayECG,eightOrderLPF.Filtertemp,eightOrderLPF.coef,eightOrderLPF.ordernum,eightOrderLPF.filtergain);
+    	LPF.filterout[2] = Usefilter(arrayECG,LPF.Filtertemp,LPF.coef,LPF.ordernum,LPF.filtergain);
     	// print the voltage as check-up
     	//printf("%0d.%03d Volts.\n\r", (int)(eightOrderLPF.filterout[2]), XAdcFractionToInt(eightOrderLPF.filterout[2]));
 
       	// after that we implement the next filter, which is a 4th order Notch filter with a frequency range of 49-51 Hz
-       	fourthOrderNotch.filterout[2] = Usefilter(eightOrderLPF.filterout,fourthOrderNotch.Filtertemp,fourthOrderNotch.coef,fourthOrderNotch.ordernum,fourthOrderNotch.filtergain);
+    	Notch.filterout[2] = Usefilter(LPF.filterout,Notch.Filtertemp,Notch.coef,Notch.ordernum,Notch.filtergain);
 
       	// Then we implement the last filter, which is a 8th order High-pass filter with a cutoff frequency of 0.35 Hz
-       	eightOrderHPF.filterout[2] = Usefilter(fourthOrderNotch.filterout,eightOrderHPF.Filtertemp,eightOrderHPF.coef,eightOrderHPF.ordernum,eightOrderHPF.filtergain);
+    	HPF.filterout[2] = Usefilter(Notch.filterout,HPF.Filtertemp,HPF.coef,HPF.ordernum,HPF.filtergain);
 
        	// now we can shift all the data from each filter to save the previous result
        	// Shift data from low-pass filter
-       	Shiftleftdata(eightOrderLPF.Filtertemp,12);
-       	Shiftleftdata(eightOrderLPF.filterout,3);
+       	Shiftleftdata(LPF.Filtertemp,12);
+       	Shiftleftdata(LPF.filterout,3);
 
        	// Shift data from notch filter
-       	Shiftleftdata(fourthOrderNotch.Filtertemp,12);
-       	Shiftleftdata(fourthOrderNotch.filterout,3);
+       	Shiftleftdata(Notch.Filtertemp,12);
+       	Shiftleftdata(Notch.filterout,3);
 
        	// Shift data from high-pass filter
-      	Shiftleftdata(eightOrderHPF.Filtertemp,12);
-       	Shiftleftdata(eightOrderHPF.filterout,3);
-
+      	Shiftleftdata(HPF.Filtertemp,12);
+       	Shiftleftdata(HPF.filterout,3);
 
     	//shift the ECG data so we can put new data into it
     	Shiftleftdata(arrayECG, 3);
@@ -195,18 +189,17 @@ int main()
     print("Program finished \n\r");
 
     // Finally now that we do not need the values made from calloc anymore, we have to free them to prevent overflowing the system
-    free(eightOrderLPF.Filtertemp);
-    free(eightOrderLPF.filterout);
+    free(LPF.Filtertemp);
+    free(LPF.filterout);
 
-    free(fourthOrderNotch.Filtertemp);
-    free(fourthOrderNotch.filterout);
+    free(Notch.Filtertemp);
+    free(Notch.filterout);
 
-    free(eightOrderHPF.Filtertemp);
-    free(eightOrderHPF.filterout);
+    free(HPF.Filtertemp);
+    free(HPF.filterout);
 
     free(arrayECG);
 
     cleanup_platform();
     return XST_SUCCESS;
 }
-

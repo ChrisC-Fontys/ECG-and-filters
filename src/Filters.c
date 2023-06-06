@@ -7,6 +7,13 @@
 #include "sleep.h"
 #include "Filters.h"
 
+/************************** Variable Definitions ****************************/
+// set parameters for all filters
+
+
+
+/******************************* Functions **********************************/
+
 void SecondOrderFilter(float *x, float *p_fCoef,float *y, float*gain, short n,short coefnum)
 {
 	//only the first 2nd order filter is different (not in the temp array)
@@ -38,12 +45,47 @@ float Usefilter(float *Filter_in, float*filter_temp, float*filter_coef, short or
 
 	//filter_in is not in temp, so first apply a second order filter normally
 	SecondOrderFilter(Filter_in,filter_coef,filter_temp,filtergain,0,0);
-
+	//love u <3 (no homo)
 	// the apply the other second orders
-	for (int i=0; i <= iteration; i++)
+	if (iteration == 0)
 	{
-		SecondOrderFilter(filter_temp,filter_coef, filter_temp,filtergain, i*3+2,i*4+4);
+		SecondOrderFilter(filter_temp,filter_coef,filter_temp,filtergain,2,4);
 	}
-
-	return(filter_temp[11]);
+	else
+	{
+		for (int i = 0; i <= iteration; i++)
+		{
+			SecondOrderFilter(filter_temp,filter_coef, filter_temp,filtergain, i*3+2,i*4+4);
+		}
+	}
+	return(filter_temp[(ordernum/2*3)-1]);
 }
+
+/*
+// function to initialize all the filters
+void Intitialize_filters(filtertype eightOrderLPF,filtertype fourthOrderNotch,filtertype eightOrderHPF)
+{
+	// first we make all the parameters for each filters and set the temporary values to zero
+
+	// low-pass filter
+	eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
+	eightOrderLPF.Filtertemp = (float*)calloc(12,sizeof(float));
+	eightOrderLPF.coef = coef_lowpass;
+	eightOrderLPF.filtergain = gain_lowpass;
+	eightOrderLPF.ordernum = 8;
+
+	// notch filter
+	fourthOrderNotch.filterout =(float*)calloc(3,sizeof(float));
+	fourthOrderNotch.Filtertemp = (float*)calloc(12,sizeof(float));
+	fourthOrderNotch.coef = coef_notch;
+	fourthOrderNotch.filtergain = gain_notch;
+	fourthOrderNotch.ordernum = 4;
+
+	// high-pass filter
+	eightOrderHPF.filterout =(float*)calloc(3,sizeof(float));
+	eightOrderHPF.Filtertemp = (float*)calloc(12,sizeof(float));
+	eightOrderHPF.coef = coef_lowpass;
+	eightOrderHPF.filtergain = gain_lowpass;
+	eightOrderHPF.ordernum = 8;
+}
+*/
