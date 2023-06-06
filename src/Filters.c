@@ -7,10 +7,43 @@
 #include "sleep.h"
 #include "Filters.h"
 
+// define the order number for each filter
+#define LPF_ordernumber 8
+#define Notch_ordernumber 4
+#define HPF_ordernumber 8
+
+// set all the constants for each filter
+const float LPF_b1	 =  2, LPF_b2 = 1;
+const float LPF_A_a1 = -1.79396184525177,	LPF_A_a2 = 0.886283112007014, 	LPF_gain_A = 0.023080316688810567637979431765415938571;
+const float LPF_B_a1 = -1.62340569764100,	LPF_B_a2 = 0.706949765682682, 	LPF_gain_B = 0.020886017010420438594353598205088928808;
+const float LPF_C_a1 = -1.51329076583890,	LPF_C_a2 = 0.591168074568205,	LPF_gain_C = 0.019469327182325198155599110805269447155;
+const float LPF_D_a1 = -1.45970625437687,	LPF_D_a2 = 0.534825984961611, 	LPF_gain_D = 0.018779932646185860944942902506227255799;
+
+const float BRF_b1 	 = -1.93187813428560307,BRF_b2	 = 1;
+const float BRF_A_a1 = -1.92271809793349013,BRF_A_a2 = 0.992520964225917846,BRF_gain_A = 0.996304442806574264;
+const float BRF_B_a1 = -1.9267332485410309,	BRF_B_a2 = 0.992724132428439709,BRF_gain_B = 0.996304442806574264;
+
+const float HPF_b1 	 = -2, HPF_b2 = 1;
+const float HPF_A_a1 = -1.99928185537008662,HPF_A_a2 = 0.999285212575926618,HPF_gain_A = 0.999641766986503311;
+const float HPF_B_a1 = -1.99796244598246098,HPF_B_a2 = 0.997965800972740902,HPF_gain_B = 0.998982061738800442;
+const float HPF_C_a1 = -1.99695378965628279,HPF_C_a2 = 0.996957142952821118,HPF_gain_C = 0.998477733152275948;
+const float HPF_D_a1 = -1.99640833339891732,HPF_D_a2 = 0.996411685779522438,HPF_gain_D = 0.998205004794609940;
+
+//const float gain_lowpassA;
+
 /************************** Variable Definitions ****************************/
-// set parameters for all filters
+// sets parameters for all filters
+							// 2nd order A coefficients		// 2nd order B coefficients		// 2nd order C coefficients		// 2nd order D coefficients
+float coef_lowpass[16] 	= {LPF_A_a1,LPF_A_a2,LPF_b1,LPF_b2,LPF_B_a1,LPF_B_a2,LPF_b1,LPF_b2,LPF_C_a1,LPF_C_a2,LPF_b1,LPF_b2,LPF_D_a1,LPF_D_a2,LPF_b1,LPF_b2};
+float gain_lowpass[4]  	= {LPF_gain_A ,LPF_gain_B ,LPF_gain_C ,LPF_gain_D};
+// 2nd order A coefficients		// 2nd order B coefficients		// 2nd order C coefficients
+float coef_notch[8]		= {BRF_A_a1,BRF_A_a2,BRF_b1,BRF_b2,BRF_B_a1,BRF_B_a2,BRF_b1,BRF_b2};
+float gain_notch[2]		= {BRF_gain_A,BRF_gain_B};
 
-
+// 2nd order A coefficients		// 2nd order B coefficients		// 2nd order C coefficients		// 2nd order D coefficients
+float coef_highpass[16] = {HPF_A_a1,HPF_A_a2,HPF_b1,HPF_b2,HPF_B_a1,HPF_B_a2,HPF_b1,HPF_b2,HPF_C_a1,HPF_C_a2,HPF_b1,HPF_b2,HPF_D_a1,HPF_D_a2,HPF_b1,HPF_b2};
+	// gain A			// gain B			 // gain C				// gain D
+float gain_highpass[4]	= {HPF_gain_A,HPF_gain_B,HPF_gain_C,HPF_gain_D};
 
 /******************************* Functions **********************************/
 
@@ -61,31 +94,29 @@ float Usefilter(float *Filter_in, float*filter_temp, float*filter_coef, short or
 	return(filter_temp[(ordernum/2*3)-1]);
 }
 
-/*
+
 // function to initialize all the filters
-void Intitialize_filters(filtertype eightOrderLPF,filtertype fourthOrderNotch,filtertype eightOrderHPF)
+void Intitialize_filters()
 {
 	// first we make all the parameters for each filters and set the temporary values to zero
+	LPF.ordernum = LPF_ordernumber;
+	LPF.filterout =(float*)calloc(3,sizeof(float));
+	LPF.Filtertemp = (float*)calloc((LPF.ordernum/2*3),sizeof(float));
+	LPF.coef = coef_lowpass;
+	LPF.filtergain = gain_lowpass;
 
-	// low-pass filter
-	eightOrderLPF.filterout =(float*)calloc(3,sizeof(float));
-	eightOrderLPF.Filtertemp = (float*)calloc(12,sizeof(float));
-	eightOrderLPF.coef = coef_lowpass;
-	eightOrderLPF.filtergain = gain_lowpass;
-	eightOrderLPF.ordernum = 8;
 
 	// notch filter
-	fourthOrderNotch.filterout =(float*)calloc(3,sizeof(float));
-	fourthOrderNotch.Filtertemp = (float*)calloc(12,sizeof(float));
-	fourthOrderNotch.coef = coef_notch;
-	fourthOrderNotch.filtergain = gain_notch;
-	fourthOrderNotch.ordernum = 4;
+	Notch.filterout =(float*)calloc(3,sizeof(float));
+	Notch.Filtertemp = (float*)calloc((Notch.ordernum/2*3),sizeof(float));
+	Notch.coef = coef_notch;
+	Notch.filtergain = gain_notch;
+	Notch.ordernum = Notch_ordernumber;
 
+	HPF.ordernum = HPF_ordernumber;
 	// high-pass filter
-	eightOrderHPF.filterout =(float*)calloc(3,sizeof(float));
-	eightOrderHPF.Filtertemp = (float*)calloc(12,sizeof(float));
-	eightOrderHPF.coef = coef_lowpass;
-	eightOrderHPF.filtergain = gain_lowpass;
-	eightOrderHPF.ordernum = 8;
+	HPF.filterout =(float*)calloc(3,sizeof(float));
+	HPF.Filtertemp = (float*)calloc((HPF.ordernum/2*3),sizeof(float));
+	HPF.coef = coef_highpass;
+	HPF.filtergain = gain_highpass;
 }
-*/
