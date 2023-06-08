@@ -53,12 +53,14 @@
 #include "sleep.h"
 #include "xstatus.h"
 #include "stdlib.h"
+#include "xtime_l.h"
 
 #include "xadcps.h"
 //#include "xgpio.h"
 
 #include "Filters.h"
 #include "ADCcode.h"
+#include "BPMCalc.h"
 
 /************************** Constant Definitions ****************************/
 
@@ -78,7 +80,7 @@ void free_all();
 /************************** Variable Definitions ****************************/
 
 float *arrayECG;
-
+int lastBPM;
 /****************************************************************************/
 /**************************        MAIN         *****************************/
 /****************************************************************************/
@@ -87,6 +89,9 @@ int main()
 {
 	// Make a array to store the values from XAdc
 	arrayECG = (float*)calloc(3,sizeof(float));
+
+	const int avgAmount = 2;
+	//AutosetPeakThreshold(10, 20);
 
 	init_platform();
 	print("Starting program...\n\r");
@@ -102,31 +107,42 @@ int main()
     	return XST_FAILURE;
     }
 
+    //AutosetPeakThreshold(0.8, 10);
+    SetPeakThreshold(3000);
+
     while(1){
 
-    	// get data from the XAdc depending on the sampling frequency
     	arrayECG[2] = XAdcGeTSampledValue(SAMPLE_FREQUENCY);
-    	// print the voltage
     	//printf("%0d.%03d Volts.\n\r", (int)(Voltagedata), XAdcFractionToInt(Voltagedata));
 
-    	// Filters the measured data and puts the ouput in a variable
     	float Filters_output = ECGfilters();
 
-    	// print the filter(s) output
-    	printf("%0d.%03d Volts.\n\r", (int)(Filters_output), XAdcFractionToInt(Filters_output));
+    	//printf("%0d.%03d Volts.\n\r", (int)(Filters_output), XAdcFractionToInt(Filters_output));
 
-    	//shift the ECG data to put new data into it
+    	int Filters_out = XAdcPs_VoltageToRaw(Filters_output);
+
+    	unsigned long averagedTimeDifference = PeakDetection(Filters_out, avgAmount);
+    	//printf("averaged time difference: %llu\n\r", averagedTimeDifference);
+
+    	int BPM = GetBPM(averagedTimeDifference);
+
+    	//if (lastBPM != BPM)
+    	//{
+    		printf("BPM: %d\n\r", BPM);
+    		lastBPM=BPM;
+    	//}
+
     	Shiftleftdata(arrayECG, 3);
 	}
 
     print("Program finished \n\r");
 
-    //release all allocated memory in heap to avoid memory leaks
     free_all();
     cleanup_platform();
     return XST_SUCCESS;
 }
 
+// Filters the measured data and puts the ouput in a variable
 float ECGfilters()
 {
 	// first we filter the data of the ECG using a 8th order low-pass with a cutoff frequency of 60Hz
@@ -150,9 +166,11 @@ float ECGfilters()
 	// Shift data from high-pass filter
 	Shiftleftdata(HPF.Filtertemp,(HPF.ordernum/2*3));
 	Shiftleftdata(HPF.filterout,3);
+
 	return(HPF.filterout[2]);
 }
 
+//release all allocated memory in heap to avoid memory leaks
 void free_all()
 {
 	free(LPF.Filtertemp);

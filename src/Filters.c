@@ -12,6 +12,10 @@
 #define Notch_ordernumber 4
 #define HPF_ordernumber 8
 
+struct filtertype LPF;
+struct filtertype Notch;
+struct filtertype HPF;
+
 // set all the constants for each filter
 const float LPF_b1	 =  2, LPF_b2 = 1;
 const float LPF_A_a1 = -1.79396184525177,	LPF_A_a2 = 0.886283112007014, 	LPF_gain_A = 0.023080316688810567637979431765415938571;
@@ -62,6 +66,7 @@ void SecondOrderFilter(float *x, float *p_fCoef,float *y, float*gain, short n,sh
 	}
 }
 
+// function that shifts the input data one step to the left
 void Shiftleftdata(float *data_In, int size)
 {
 	for (int i = 1; i < size; i++)

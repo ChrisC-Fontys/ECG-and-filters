@@ -5,15 +5,15 @@ typedef struct filtertype
 {
 	float *Filtertemp;
 	float *filterout;
-	short ordernum;
+	short  ordernum;
 	float *coef;
 	float *filtergain;
 }filtertype;
 
 // make structures for all filter types
-struct filtertype LPF;
-struct filtertype Notch;
-struct filtertype HPF;
+extern struct filtertype LPF;
+extern struct filtertype Notch;
+extern struct filtertype HPF;
 
 void SecondOrderFilter(float *x, float *p_fCoef,float *y, float*gain, short n,short coefnum);
 void Shiftleftdata(float data_In[], int size);

@@ -60,6 +60,7 @@ float XAdcGetValues()
 	return (VccPintData);
 }
 
+// get data from the XAdc depending on the sampling frequency
 float XAdcGeTSampledValue(int samplefrequency)
 {
 	XTime_GetTime(&newtime);
