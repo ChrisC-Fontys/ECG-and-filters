@@ -61,7 +61,7 @@
 #include "Filters.h"
 #include "ADCcode.h"
 #include "BPMCalc.h"
-
+#include "Detection.h"
 /************************** Constant Definitions ****************************/
 
 #define XADC_DEVICE_ID 		XPAR_XADCPS_0_DEVICE_ID
@@ -121,6 +121,8 @@ int main()
 
     	int Filters_out = XAdcPs_VoltageToRaw(Filters_output);
 
+	//if periodic detection needs to occur, uncomment the following:
+	//avgAmount = 1;
     	unsigned long averagedTimeDifference = PeakDetection(Filters_out, avgAmount);
     	//printf("averaged time difference: %llu\n\r", averagedTimeDifference);
 
@@ -131,7 +133,9 @@ int main()
     		printf("BPM: %d\n\r", BPM);
     		lastBPM=BPM;
     	//}
-
+	if (avgAmount == 1) {
+		Detectionsystem(BPM, avgeragedTimeDifference);
+	}
     	Shiftleftdata(arrayECG, 3);
 	}
 
